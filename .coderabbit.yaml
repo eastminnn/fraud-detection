@@ -1,0 +1,40 @@
+# https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+language: "ko-KR"
+
+reviews:
+  # quiet < chill < assertive. 학습 목적이므로 지적을 많이 받는 쪽으로 둔다.
+  profile: "assertive"
+
+  # 리뷰 결과로 머지를 막지 않는다. 게이트는 CI 가 담당하고 리뷰는 참고용으로 쓴다.
+  request_changes_workflow: false
+
+  high_level_summary: true
+  in_progress_fortune: false
+
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "develop"
+      - "main"
+
+  # 우리가 작성하지 않은 파일은 리뷰 대상에서 제외한다.
+  path_filters:
+    - "!gradle/wrapper/**"
+    - "!gradlew"
+    - "!gradlew.bat"
+
+  path_instructions:
+    - path: "src/main/resources/db/migration/**"
+      instructions: |
+        Flyway 마이그레이션이다. 이미 적용된 파일의 수정은 지적하고,
+        새 파일은 롤백 가능성과 기존 데이터 영향(NOT NULL 추가 등)을 중심으로 검토한다.
+    - path: "src/main/java/**"
+      instructions: |
+        Spring Boot 애플리케이션이다. 다음을 중점적으로 본다.
+        - 트랜잭션 경계가 적절한지, 트랜잭션 안에 느린 작업이 들어가지 않는지
+        - 엔티티를 그대로 응답으로 내보내지 않는지 (DTO 사용 여부)
+        - 목표 처리량이 200~500 TPS 이므로 요청당 쿼리 수가 불필요하게 늘어나지 않는지
+
+chat:
+  auto_reply: true
