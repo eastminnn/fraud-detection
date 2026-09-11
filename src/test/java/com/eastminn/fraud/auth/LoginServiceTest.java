@@ -3,9 +3,13 @@ package com.eastminn.fraud.auth;
 import com.eastminn.fraud.TestcontainersConfiguration;
 import com.eastminn.fraud.common.exception.CustomException;
 import com.eastminn.fraud.common.exception.error.ErrorCode;
+import com.eastminn.fraud.detection.FraudDetection;
+import com.eastminn.fraud.detection.FraudDetectionRepository;
+import com.eastminn.fraud.detection.RuleType;
 import com.eastminn.fraud.loginattempt.LoginAttempt;
 import com.eastminn.fraud.loginattempt.LoginAttemptRepository;
 import com.eastminn.fraud.user.User;
+import com.eastminn.fraud.user.UserStatus;
 import com.eastminn.fraud.user.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,10 +42,14 @@ class LoginServiceTest {
 	private LoginAttemptRepository loginAttemptRepository;
 
 	@Autowired
+	private FraudDetectionRepository fraudDetectionRepository;
+
+	@Autowired
 	private PasswordEncoder passwordEncoder;
 
 	@BeforeEach
 	void 초기화() {
+		fraudDetectionRepository.deleteAll();
 		loginAttemptRepository.deleteAll();
 		userRepository.deleteAll();
 		userRepository.save(User.create("minsu", passwordEncoder.encode(RAW_PASSWORD)));
@@ -48,6 +57,7 @@ class LoginServiceTest {
 
 	@AfterEach
 	void 정리() {
+		fraudDetectionRepository.deleteAll();
 		loginAttemptRepository.deleteAll();
 		userRepository.deleteAll();
 	}
@@ -93,5 +103,70 @@ class LoginServiceTest {
 		List<LoginAttempt> attempts = loginAttemptRepository.findAll();
 		assertThat(attempts).hasSize(1);
 		assertThat(attempts.get(0).isSuccess()).isTrue();
+	}
+
+	@Test
+	void 실패가_9번이면_차단하지_않는다() {
+		실패기록을_남긴다(8);
+
+		assertThatThrownBy(() -> loginService.login(new LoginRequest("minsu", "wrong"), IP))
+				.isInstanceOf(CustomException.class)
+				.extracting("errorCode")
+				.isEqualTo(ErrorCode.LOGIN_FAILED);
+	}
+
+	@Test
+	void 실패가_10번이면_차단한다() {
+		실패기록을_남긴다(9);
+
+		assertThatThrownBy(() -> loginService.login(new LoginRequest("minsu", "wrong"), IP))
+				.isInstanceOf(CustomException.class)
+				.extracting("errorCode")
+				.isEqualTo(ErrorCode.ACCOUNT_BLOCKED);
+	}
+
+	@Test
+	void 차단되면_판정_근거가_기록된다() {
+		실패기록을_남긴다(9);
+
+		assertThatThrownBy(() -> loginService.login(new LoginRequest("minsu", "wrong"), IP))
+				.isInstanceOf(CustomException.class);
+
+		List<FraudDetection> detections = fraudDetectionRepository.findAll();
+		assertThat(detections).hasSize(1);
+		assertThat(detections.get(0).getUsername()).isEqualTo("minsu");
+		assertThat(detections.get(0).getIpAddress()).isEqualTo(IP);
+		assertThat(detections.get(0).getRuleType()).isEqualTo(RuleType.BRUTE_FORCE);
+		assertThat(detections.get(0).getTriggerCount()).isEqualTo(10);
+	}
+
+	@Test
+	void 차단되면_계정_상태가_BLOCKED_로_바뀐다() {
+		실패기록을_남긴다(9);
+
+		assertThatThrownBy(() -> loginService.login(new LoginRequest("minsu", "wrong"), IP))
+				.isInstanceOf(CustomException.class);
+
+		User user = userRepository.findByUsername("minsu").orElseThrow();
+		assertThat(user.getStatus()).isEqualTo(UserStatus.BLOCKED);
+	}
+
+	@Test
+	void 차단된_계정은_올바른_비밀번호로도_로그인할_수_없다() {
+		실패기록을_남긴다(9);
+		assertThatThrownBy(() -> loginService.login(new LoginRequest("minsu", "wrong"), IP))
+				.isInstanceOf(CustomException.class);
+
+		assertThatThrownBy(() -> loginService.login(new LoginRequest("minsu", RAW_PASSWORD), IP))
+				.isInstanceOf(CustomException.class)
+				.extracting("errorCode")
+				.isEqualTo(ErrorCode.ACCOUNT_BLOCKED);
+	}
+
+	private void 실패기록을_남긴다(int count) {
+		Instant now = Instant.now();
+		for (int i = 0; i < count; i++) {
+			loginAttemptRepository.save(LoginAttempt.of("minsu", IP, false, now.minusSeconds(i)));
+		}
 	}
 }
