@@ -4,6 +4,7 @@ import com.eastminn.fraud.TestcontainersConfiguration;
 import com.eastminn.fraud.common.exception.CustomException;
 import com.eastminn.fraud.common.exception.error.ErrorCode;
 import com.eastminn.fraud.detection.FraudDetection;
+import com.eastminn.fraud.detection.LoginAttemptCounter;
 import com.eastminn.fraud.detection.FraudDetectionRepository;
 import com.eastminn.fraud.detection.RuleType;
 import com.eastminn.fraud.loginattempt.LoginAttempt;
@@ -17,10 +18,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -31,6 +38,8 @@ class LoginServiceTest {
 
 	private static final String IP = "192.168.0.1";
 	private static final String RAW_PASSWORD = "password123";
+	private static final Duration WINDOW = Duration.ofMinutes(5);
+	private static final int THRESHOLD = 10;
 
 	@Autowired
 	private LoginService loginService;
@@ -45,10 +54,17 @@ class LoginServiceTest {
 	private FraudDetectionRepository fraudDetectionRepository;
 
 	@Autowired
+	private LoginAttemptCounter loginAttemptCounter;
+
+	@Autowired
+	private StringRedisTemplate redisTemplate;
+
+	@Autowired
 	private PasswordEncoder passwordEncoder;
 
 	@BeforeEach
 	void 초기화() {
+		Redis_정리();
 		fraudDetectionRepository.deleteAll();
 		loginAttemptRepository.deleteAll();
 		userRepository.deleteAll();
@@ -57,6 +73,7 @@ class LoginServiceTest {
 
 	@AfterEach
 	void 정리() {
+		Redis_정리();
 		fraudDetectionRepository.deleteAll();
 		loginAttemptRepository.deleteAll();
 		userRepository.deleteAll();
@@ -163,10 +180,60 @@ class LoginServiceTest {
 				.isEqualTo(ErrorCode.ACCOUNT_BLOCKED);
 	}
 
+	@Test
+	void 동시에_임계치를_넘겨도_차단은_한_번만_기록된다() throws Exception {
+		실패기록을_남긴다(9);
+
+		int 동시요청수 = 20;
+		ExecutorService pool = Executors.newFixedThreadPool(동시요청수);
+		CountDownLatch 출발 = new CountDownLatch(1);
+		CountDownLatch 완료 = new CountDownLatch(동시요청수);
+
+		for (int i = 0; i < 동시요청수; i++) {
+			pool.submit(() -> {
+				try {
+					출발.await();
+					loginService.login(new LoginRequest("minsu", "wrong"), IP);
+				} catch (Exception expected) {
+					// 로그인 실패 예외는 무시한다. 검증 대상은 탐지 기록 수다.
+				} finally {
+					완료.countDown();
+				}
+			});
+		}
+
+		출발.countDown();
+		완료.await(30, TimeUnit.SECONDS);
+		pool.shutdown();
+
+		assertThat(fraudDetectionRepository.findAll()).hasSize(1);
+	}
+
+	@Test
+	void 실제_로그인_실패를_열_번_반복하면_차단된다() {
+		for (int i = 0; i < THRESHOLD - 1; i++) {
+			assertThatThrownBy(() -> loginService.login(new LoginRequest("minsu", "wrong"), IP))
+					.isInstanceOf(CustomException.class)
+					.extracting("errorCode")
+					.isEqualTo(ErrorCode.LOGIN_FAILED);
+		}
+
+		assertThatThrownBy(() -> loginService.login(new LoginRequest("minsu", "wrong"), IP))
+				.isInstanceOf(CustomException.class)
+				.extracting("errorCode")
+				.isEqualTo(ErrorCode.ACCOUNT_BLOCKED);
+	}
+
 	private void 실패기록을_남긴다(int count) {
 		Instant now = Instant.now();
 		for (int i = 0; i < count; i++) {
-			loginAttemptRepository.save(LoginAttempt.of("minsu", IP, false, now.minusSeconds(i)));
+			LoginAttempt saved = loginAttemptRepository.save(LoginAttempt.of("minsu", IP, false, now));
+			loginAttemptCounter.record("minsu", saved.getId(), now, WINDOW, THRESHOLD);
 		}
+	}
+
+	private void Redis_정리() {
+		redisTemplate.delete("login:fail:minsu");
+		redisTemplate.delete("login:blocked:minsu");
 	}
 }

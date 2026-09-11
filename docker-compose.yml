@@ -21,5 +21,30 @@ services:
         limits:
           memory: 512M
 
+  redis:
+    image: redis:8-alpine
+    container_name: fraud-redis
+    command: ["redis-server", "--maxmemory", "192mb"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: fraud-redisinsight
+    ports:
+      - "5540:5540"
+    profiles: ["observability"]
+    depends_on:
+      - redis
+
 volumes:
   postgres-data:
