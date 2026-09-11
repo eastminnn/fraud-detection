@@ -1,5 +1,8 @@
-package com.eastminn.fraud.auth;
+package com.eastminn.fraud.auth.controller;
 
+import com.eastminn.fraud.auth.dto.LoginRequest;
+import com.eastminn.fraud.auth.dto.LoginResponse;
+import com.eastminn.fraud.auth.service.LoginService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

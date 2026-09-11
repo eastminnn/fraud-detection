@@ -1,4 +1,4 @@
-package com.eastminn.fraud.loginattempt;
+package com.eastminn.fraud.loginattempt.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

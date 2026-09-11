@@ -1,5 +1,6 @@
-package com.eastminn.fraud.user;
+package com.eastminn.fraud.user.repository;
 
+import com.eastminn.fraud.user.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

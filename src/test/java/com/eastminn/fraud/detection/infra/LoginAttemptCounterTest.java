@@ -1,4 +1,4 @@
-package com.eastminn.fraud.detection;
+package com.eastminn.fraud.detection.infra;
 
 import com.eastminn.fraud.TestcontainersConfiguration;
 import org.junit.jupiter.api.BeforeEach;
