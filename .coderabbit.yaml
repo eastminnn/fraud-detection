@@ -11,6 +11,10 @@ reviews:
   high_level_summary: true
   in_progress_fortune: false
 
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+
   auto_review:
     enabled: true
     drafts: false
