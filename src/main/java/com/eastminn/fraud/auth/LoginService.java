@@ -30,13 +30,13 @@ public class LoginService {
 
 		boolean success = user != null && passwordEncoder.matches(request.password(), user.getPasswordHash());
 
-		loginAttemptRepository.save(
+		LoginAttempt attempt = loginAttemptRepository.save(
 				success
 						? LoginAttempt.success(request.username(), ipAddress)
 						: LoginAttempt.failure(request.username(), ipAddress));
 
 		if (!success) {
-			bruteForceDetector.detect(request.username(), ipAddress);
+			bruteForceDetector.detect(request.username(), ipAddress, attempt.getId());
 			throw new CustomException(ErrorCode.LOGIN_FAILED);
 		}
 
