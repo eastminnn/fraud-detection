@@ -1,4 +1,4 @@
-package com.eastminn.fraud.config;
+package com.eastminn.fraud.detection.infra;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

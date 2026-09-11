@@ -1,4 +1,4 @@
-package com.eastminn.fraud.detection;
+package com.eastminn.fraud.detection.infra;
 
 /**
  * @param count       윈도우 안의 실패 횟수

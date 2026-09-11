@@ -1,4 +1,4 @@
-package com.eastminn.fraud.detection;
+package com.eastminn.fraud.detection.infra;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -27,11 +27,11 @@ public class LoginAttemptCounter {
 		List<Long> result = redisTemplate.execute(
 				recordLoginFailureScript,
 				List.of(failKey(username), blockedKey(username)),
-				String.valueOf(now.toEpochMilli()),
-				String.valueOf(now.minus(window).toEpochMilli()),
-				String.valueOf(attemptId),
-				String.valueOf(KEY_TTL.toSeconds()),
-				String.valueOf(threshold));
+				String.valueOf(now.toEpochMilli()),                 // ARGV[1] 현재 시각
+				String.valueOf(now.minus(window).toEpochMilli()),   // ARGV[2] 윈도우 시작
+				String.valueOf(attemptId),                          // ARGV[3] member
+				String.valueOf(KEY_TTL.toSeconds()),                // ARGV[4] TTL
+				String.valueOf(threshold));                         // ARGV[5] 임계치
 
 		return new FailureCount(result.get(0), result.get(1) == 1L);
 	}

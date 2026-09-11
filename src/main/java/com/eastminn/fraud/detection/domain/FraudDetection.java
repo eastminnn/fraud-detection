@@ -1,4 +1,4 @@
-package com.eastminn.fraud.detection;
+package com.eastminn.fraud.detection.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

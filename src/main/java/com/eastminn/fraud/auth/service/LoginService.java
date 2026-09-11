@@ -1,13 +1,15 @@
-package com.eastminn.fraud.auth;
+package com.eastminn.fraud.auth.service;
 
+import com.eastminn.fraud.auth.dto.LoginRequest;
+import com.eastminn.fraud.auth.dto.LoginResponse;
 import com.eastminn.fraud.common.exception.CustomException;
 import com.eastminn.fraud.common.exception.error.ErrorCode;
-import com.eastminn.fraud.detection.BruteForceDetector;
-import com.eastminn.fraud.loginattempt.LoginAttempt;
-import com.eastminn.fraud.loginattempt.LoginAttemptRepository;
-import com.eastminn.fraud.user.User;
-import com.eastminn.fraud.user.UserRepository;
-import com.eastminn.fraud.user.UserStatus;
+import com.eastminn.fraud.detection.service.BruteForceDetector;
+import com.eastminn.fraud.loginattempt.domain.LoginAttempt;
+import com.eastminn.fraud.loginattempt.repository.LoginAttemptRepository;
+import com.eastminn.fraud.user.domain.User;
+import com.eastminn.fraud.user.repository.UserRepository;
+import com.eastminn.fraud.user.domain.UserStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

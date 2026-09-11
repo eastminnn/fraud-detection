@@ -1,5 +1,6 @@
-package com.eastminn.fraud.loginattempt;
+package com.eastminn.fraud.loginattempt.repository;
 
+import com.eastminn.fraud.loginattempt.domain.LoginAttempt;
 import com.eastminn.fraud.TestcontainersConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,8 +1,12 @@
-package com.eastminn.fraud.detection;
+package com.eastminn.fraud.detection.service;
 
+import com.eastminn.fraud.detection.infra.FailureCount;
+import com.eastminn.fraud.detection.domain.FraudDetection;
+import com.eastminn.fraud.detection.repository.FraudDetectionRepository;
+import com.eastminn.fraud.detection.infra.LoginAttemptCounter;
 import com.eastminn.fraud.common.exception.CustomException;
 import com.eastminn.fraud.common.exception.error.ErrorCode;
-import com.eastminn.fraud.user.UserRepository;
+import com.eastminn.fraud.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,5 +1,6 @@
-package com.eastminn.fraud.user;
+package com.eastminn.fraud.user.repository;
 
+import com.eastminn.fraud.user.domain.User;
 import com.eastminn.fraud.TestcontainersConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

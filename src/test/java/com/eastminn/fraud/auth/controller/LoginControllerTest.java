@@ -1,9 +1,9 @@
-package com.eastminn.fraud.auth;
+package com.eastminn.fraud.auth.controller;
 
 import com.eastminn.fraud.TestcontainersConfiguration;
-import com.eastminn.fraud.loginattempt.LoginAttemptRepository;
-import com.eastminn.fraud.user.User;
-import com.eastminn.fraud.user.UserRepository;
+import com.eastminn.fraud.loginattempt.repository.LoginAttemptRepository;
+import com.eastminn.fraud.user.domain.User;
+import com.eastminn.fraud.user.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
